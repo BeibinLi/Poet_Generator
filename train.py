@@ -9,7 +9,6 @@ from model import CharRNN
 from generate import generate
 
 
-
 def save(decoder, model_filename):
     torch.save(decoder, model_filename)
     print('Saved as %s' % model_filename)
@@ -23,15 +22,19 @@ def load( model_filename ):
 
 #%%
 
-def random_training_set(file, chunk_len, batch_size):
-    inp = torch.LongTensor(batch_size, chunk_len)
-    target = torch.LongTensor(batch_size, chunk_len)
+def random_training_set(sentences, max_len, batch_size):
+# Output:inp (size chunk_len x batch_size ), target (same size, shift one column)
+    inp = torch.LongTensor(batch_size, max_len)
+    target = torch.LongTensor(batch_size, max_len)
     
-    file_len = len( file )
     for bi in range(batch_size):
-        start_index = random.randint(0, file_len - chunk_len)
-        end_index = start_index + chunk_len + 1
-        chunk = file[start_index:end_index]
+        
+        chunk = random.choice( sentences )
+        
+        if len(chunk) > max_len + 1: # remove extra
+            chunk = chunk[:max_len+1]
+        else: # add padding
+            chunk += "\n" * (max_len + 1 - len(chunk))        
         inp[bi] = helpers.char_tensor(chunk[:-1])
         target[bi] = helpers.char_tensor(chunk[1:])
     inp = Variable(inp)
@@ -43,7 +46,10 @@ def random_training_set(file, chunk_len, batch_size):
 
 def train_one_entry(decoder, decoder_optimizer, criterion, inp, target, chunk_len, batch_size ):
     hidden = decoder.init_hidden(batch_size)
-    if helpers.USE_CUDA: hidden = hidden.cuda()
+    
+    if helpers.USE_CUDA:
+        if helpers.mcell == "lstm": hidden = (hidden[0].cuda(), hidden[1].cuda())
+        else: hidden = hidden.cuda()
     decoder.zero_grad()
     loss = 0
 
@@ -56,11 +62,13 @@ def train_one_entry(decoder, decoder_optimizer, criterion, inp, target, chunk_le
 
     return loss.data[0] / chunk_len
 
-def train( filename = "poets.txt", hidden_size = 100, n_layers = 2, 
-          learning_rate=0.01, n_epochs = 2000, chunk_len=200, batch_size = 128,
+def train( filename = "poets.txt", hidden_size = 128, n_layers = 2, 
+          learning_rate=0.01, n_epochs = 10000, chunk_len=20, batch_size = 1024,
           shuffle = True, print_every =  100 ):
     #%% Global Configuration
     file, file_len, all_characters, n_characters = helpers.read_file( filename )
+    
+    sentences = file.split("\n")
     
     print( "There are %d in the dataset" % n_characters )
     
@@ -75,10 +83,9 @@ def train( filename = "poets.txt", hidden_size = 100, n_layers = 2,
             n_characters,
             hidden_size,
             n_characters,
-            model="gru",
+            model = helpers.mcell,
             n_layers=n_layers,
         )
-        
         
     decoder_optimizer = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
@@ -91,16 +98,21 @@ def train( filename = "poets.txt", hidden_size = 100, n_layers = 2,
     try:
         print("Training for %d epochs..." % n_epochs)
         for epoch in range(n_epochs):
-            inp, target = random_training_set( file, chunk_len, batch_size )
+            
+            if epoch != 0 and epoch % 1000 == 0: 
+                learning_rate /= 2
+                decoder_optimizer = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
+
+            inp, target = random_training_set( sentences, chunk_len, batch_size )
             
             loss = train_one_entry(decoder, decoder_optimizer, criterion, 
                                         inp, target, chunk_len, batch_size )
             
             all_losses.append( loss )
     
-            if epoch % print_every == 0:
-                print('[%s (%d %d%%) %.4f]' % ( helpers.time_since(start), epoch, epoch / n_epochs * 100, loss))
-                print(generate(decoder, '新年', 40, cuda= helpers.USE_CUDA), '\n')
+            if epoch != 0 and epoch % print_every == 0:
+                print('%s: [%s (%d %d%%) %.4f]' % ( time.ctime(), helpers.time_since(start), epoch, epoch / n_epochs * 100, loss))
+                print(generate(decoder, '新年', 100, cuda= helpers.USE_CUDA), '\n')
                     
                 save( decoder, model_filename )
     

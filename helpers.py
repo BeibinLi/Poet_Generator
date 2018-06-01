@@ -6,6 +6,9 @@ USE_CUDA = torch.cuda.is_available()
 if USE_CUDA: print("Using CUDA")
 
 
+mcell = "lstm" # memory cell
+
+
 def char_tensor(string):
     tensor = torch.zeros(len(string)).long()
     for c in range(len(string)):
@@ -27,7 +30,8 @@ def time_since(since):
 #%%
 
 def read_file( filename = "poets.txt" , char_filename = "unique_chars.txt" ):
-    file = open(filename, "r", encoding = "utf-8" ).read()
+    file = open(filename, "r", encoding = "utf-8" ).read() 
+    # remember, we should not use "strip" because we need the newline character "\n" as EOS.
 
     all_chars = open( char_filename, "r", encoding = "utf-8" ).read()
     all_characters = [ _ for _ in all_chars ] # break string into array
