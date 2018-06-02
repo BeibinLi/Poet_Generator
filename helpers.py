@@ -7,7 +7,7 @@ if USE_CUDA: print("Using CUDA")
 
 
 mcell = "lstm" # memory cell
-
+pt_name = "poets.pt"
 
 def char_tensor(string):
     tensor = torch.zeros(len(string)).long()

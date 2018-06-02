@@ -64,17 +64,17 @@ def train_one_entry(decoder, decoder_optimizer, criterion, inp, target, chunk_le
 
 def train( filename = "poets.txt", hidden_size = 128, n_layers = 2, 
           learning_rate=0.01, n_epochs = 10000, chunk_len=20, batch_size = 1024,
-          shuffle = True, print_every =  100 ):
+          print_every =  100 ):
     #%% Global Configuration
     file, file_len, all_characters, n_characters = helpers.read_file( filename )
     
     sentences = file.split("\n")
     
-    print( "There are %d in the dataset" % n_characters )
+    print( "There are %d unique characters in the dataset" % n_characters )
+    print( "There are %d sentences in the dataset with total of %d characters" % ( len(sentences), len(file) ) )
     
     #%% Model Saving and Loading
-    
-    model_filename = os.path.splitext(os.path.basename(filename))[0] + '.pt'
+    model_filename = helpers.pt_name
 
     if os.path.exists( model_filename ):
         decoder = load( model_filename )
@@ -123,7 +123,7 @@ def train( filename = "poets.txt", hidden_size = 128, n_layers = 2,
     import matplotlib.pyplot as plt
     plt.plot( all_losses )
     plt.xlabel( "iteration" )
-    plt.ylabel( "train lost" )
+    plt.ylabel( "train loss" )
 
 if __name__ == "__main__":
     train()
