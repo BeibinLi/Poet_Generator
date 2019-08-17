@@ -6,7 +6,7 @@ USE_CUDA = torch.cuda.is_available()
 if USE_CUDA: print("Using CUDA")
 
 
-mcell = "lstm" # memory cell
+mcell = "gru" # memory cell
 pt_name = "poets.pt"
 
 def char_tensor(string):

@@ -5,15 +5,19 @@ import torch
 from torch.autograd import Variable
 
 import helpers
-
+import pdb
 
 def generate(decoder, prime_str='我', predict_len=100, temperature=0.8, cuda=False):
     hidden = decoder.init_hidden(1)
     prime_input = Variable( helpers.char_tensor(prime_str).unsqueeze(0))
 
     if helpers.USE_CUDA:
-        if helpers.mcell== "lstm": hidden = (hidden[0].cuda(), hidden[1].cuda())
-        else: hidden = hidden.cuda()
+        if helpers.mcell== "lstm": 
+            hidden = (hidden[0].cuda(), hidden[1].cuda())
+        elif helpers.mcell == "gru":
+            hidden = (hidden[0].cuda(), hidden[1].cuda())
+        else: 
+            hidden = hidden.cuda()
         prime_input = prime_input.cuda()
     predicted = prime_str
 

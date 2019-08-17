@@ -27,7 +27,7 @@ class CharRNN(nn.Module):
         
         self.model = model
         if model.lower() == "lstm":
-            self.cell = nn.LSTM(hidden_size, hidden_size, n_layers) # GRU unit
+            self.cell = nn.LSTM(hidden_size, hidden_size, n_layers)
         else: # model is GRU
             self.cell = nn.GRU(hidden_size, hidden_size, n_layers) # GRU unit
 
